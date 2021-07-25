@@ -2,7 +2,6 @@ package com.test;
 
 import lombok.Data;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.jpa.domain.Specification;
 import sam.misfis.core.criteria.SearchSpecification;
 import sam.misfis.core.criteria.query.SpecQueryImpl;
 

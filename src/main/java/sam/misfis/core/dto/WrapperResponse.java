@@ -53,4 +53,12 @@ public class WrapperResponse<T> implements EntityPrototype<T>{
             properties = WrapperResponseUtils.toMap(fields.toArray(new String[0]), this.value);
         }
     }
+
+    @Override
+    public String toString() {
+        return "WrapperResponse{" +
+                "include='" + include + '\'' +
+                ", properties=" + properties +
+                '}';
+    }
 }
