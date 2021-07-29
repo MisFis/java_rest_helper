@@ -8,10 +8,8 @@ import javax.persistence.criteria.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Getter
@@ -62,6 +60,10 @@ public class SearchSpecification<T> implements Specification<T> {
                 return builder.like(builder.lower(queryModel.get(criteria.getKey())), ("%" + value).toLowerCase(Locale.ROOT));
             case CONTAINS:
                 return builder.like(builder.lower(queryModel.get(criteria.getKey())), ("%" + value + "%").toLowerCase(Locale.ROOT));
+            case IN: {
+                return queryModel.get(criteria.getKey()).in(toArray(criteria.getType()));
+            }
+
             default:
                 return null;
         }
@@ -105,5 +107,12 @@ public class SearchSpecification<T> implements Specification<T> {
             return LocalDate.parse(value, formatter);
         }
         return value;
+    }
+
+
+    private List<?> toArray(Class toCast) {
+        String value = (String) this.criteria.getValue();
+        if (toCast.isAssignableFrom(List.class)) return Arrays.stream(value.split(",")).collect(Collectors.toList());
+        return Collections.emptyList();
     }
 }

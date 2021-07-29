@@ -12,10 +12,6 @@ public class CriteriaParser {
 
     private static Pattern oldRegExp;
 
-
-    private static Pattern newRegExp = Pattern.compile("^(\\w+?)(" + Joiner.on("|")
-            .join(SearchOperation.SIMPLE_OPERATION_SET) + ")(\\p{Punct}?)(А-я\\w+?)(\\p{Punct}?)$");
-
     static {
         Map<String, Operator> tempMap = new HashMap<>();
         tempMap.put("AND", Operator.AND);
@@ -27,7 +23,7 @@ public class CriteriaParser {
 
         String operationSetExper = Joiner.on("|")
                 .join(SearchOperation.SIMPLE_OPERATION_SET);
-        Pattern pattern = Pattern.compile("(\\p{Punct}?)([\\.\\w]+?)(" + operationSetExper + ")(\\p{Punct}?)([А-я\\w:-]+)(\\p{Punct}?)");
+        Pattern pattern = Pattern.compile("(\\p{Punct}?)([\\.\\w]+?)(" + operationSetExper + ")(\\p{Punct}?)([А-я\\w,:-]+)(\\p{Punct}?)");
         oldRegExp = pattern;
     }
 
