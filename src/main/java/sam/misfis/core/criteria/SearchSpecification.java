@@ -52,8 +52,6 @@ public class SearchSpecification<T> implements Specification<T> {
                 return builder.greaterThan(queryModel.get(criteria.getKey()), value);
             case LESS_THAN:
                 return builder.lessThan(queryModel.get(criteria.getKey()), value);
-            case LIKE:
-                return builder.like(queryModel.get(criteria.getKey()), value.toString());
             case STARTS_WITH:
                 return builder.like(builder.lower(queryModel.get(criteria.getKey())), (value + "%").toLowerCase(Locale.ROOT));
             case ENDS_WITH:

@@ -1,19 +1,15 @@
 package com.test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import sam.misfis.core.criteria.query.ResponseDTOImpl;
 import sam.misfis.core.dto.WrapperResponse;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -22,7 +18,7 @@ public class ResponseDTOImplTest {
 
     @SneakyThrows
     @Test
-    public void t1() {
+    public void testDeepValue() {
         TreeModel parent = new TreeModel("parent");
         parent.addChildren(new TreeModel("children 1"));
         parent.addChildren(new TreeModel("children 2"));
@@ -57,11 +53,80 @@ public class ResponseDTOImplTest {
 
         var rightResult = "{\"children\":[{\"name\":\"children 1\"},{\"name\":\"children 2\"},{\"children\":[{\"name\":\"children 3 1\"}],\"name\":\"children 3\",\"options\":{\"security\":\"ERROR_CHILD\",\"attr\":{\"test\":\"test1\",\"test1\":{\"name\":\"option tree\",\"parent\":null,\"children\":null,\"options\":null}},\"setting\":\"VALID_CHILD\"}}],\"name\":\"parent\",\"options\":{\"security\":\"ERROR\",\"attr\":{\"test\":\"test\",\"test1\":{\"name\":\"option tree\",\"parent\":null,\"children\":null,\"options\":null}},\"setting\":\"VALID\"}}";
 
-        log.info(mapper.writeValueAsString(result));
+        assertEquals(mapper.writeValueAsString(result), rightResult);
+    }
+
+    @Test
+    public void testBigDecimal() throws JsonProcessingException {
+        BigDecimalWrapper wrapper = new BigDecimalWrapper(UUID.fromString("bc65b452-1f4e-4d72-9cce-98a3ad3ba994"), new BigDecimal(100), false);
+
+        ResponseDTOImpl<BigDecimalWrapper> response = new ResponseDTOImpl();
+        response.setInclude("default, value, aBoolean");
+
+        WrapperResponse<BigDecimalWrapper> result = response.toDTO(wrapper);
+
+        ObjectMapper mapper = new ObjectMapper();
+        log.info(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+
+        var rightResult = "{\"aBoolean\":false,\"uuid\":\"bc65b452-1f4e-4d72-9cce-98a3ad3ba994\",\"value\":100}";
 
         assertEquals(mapper.writeValueAsString(result), rightResult);
     }
 
+    @Test
+    public void testEnum() throws JsonProcessingException {
+        WrapperEnum wrapper = new WrapperEnum();
+        wrapper.setTestEnum(TestEnum.VALUE1);
+        ResponseDTOImpl<WrapperEnum> response = new ResponseDTOImpl();
+        response.setInclude("testEnum");
+
+        WrapperResponse<WrapperEnum> result = response.toDTO(wrapper);
+
+        ObjectMapper mapper = new ObjectMapper();
+        log.info(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+
+        var rightResult = "{\"testEnum\":\"VALUE1\"}";
+
+        assertEquals(mapper.writeValueAsString(result), rightResult);
+    }
+
+
+    @Test
+    public void testObjectKeyNull() throws JsonProcessingException {
+        TreeModel parent = new TreeModel("parent");
+
+        ResponseDTOImpl<TreeModel> response = new ResponseDTOImpl();
+        response.setInclude("default, children.uuid");
+
+        WrapperResponse<TreeModel> result = response.toDTO(parent);
+
+        ObjectMapper mapper = new ObjectMapper();
+        log.info(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+
+        var rightResult = "{\"name\":\"parent\"}";
+
+        assertEquals(mapper.writeValueAsString(result), rightResult);
+    }
+
+    @Data
+    public class WrapperEnum {
+        private TestEnum testEnum;
+    }
+
+    public enum TestEnum {
+        VALUE1,
+        VALUE2
+        ;
+    }
+
+
+    @Data
+    @AllArgsConstructor
+    public class BigDecimalWrapper {
+        private UUID uuid;
+        private BigDecimal value;
+        private boolean aBoolean;
+    }
 
     @Getter
     @Setter

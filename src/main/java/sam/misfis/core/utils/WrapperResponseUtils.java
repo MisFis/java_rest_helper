@@ -13,14 +13,15 @@ import sam.misfis.core.utils.exception.NoFieldFoundException;
 import javax.persistence.Entity;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static org.reflections.ReflectionUtils.withModifier;
-import static org.reflections.ReflectionUtils.withPrefix;
+import static org.reflections.ReflectionUtils.*;
 
 @Slf4j
 @UtilityClass
@@ -32,6 +33,8 @@ public class WrapperResponseUtils {
     private static final Set<String> excludeField = new HashSet<>();
 
     static {
+        primitiveType.add(BigDecimal.class);
+        primitiveType.add(BigInteger.class);
         primitiveType.add(Boolean.class);
         primitiveType.add(Character.class);
         primitiveType.add(Byte.class);
@@ -62,13 +65,15 @@ public class WrapperResponseUtils {
             String root = prop.getRoot();
             if (root != null) {
                 Object value = getValue(root, target);
-                if (value.getClass().getAnnotation(Entity.class) != null) {
-                    value = initializeAndUnproxy(value);
+                if (value != null) {
+                    if (value.getClass().getAnnotation(Entity.class) != null) {
+                        value = initializeAndUnproxy(value);
+                    }
+                    Map<String, Field> fieldInChildrenTarget = getFieldInTarget(value);
+                    Map<String, Object> result = new HashMap<>();
+                    addPropertiesToResult(result, prop, fieldInChildrenTarget, value);
+                    map.put(root, result);
                 }
-                Map<String, Field> fieldInChildrenTarget = getFieldInTarget(value);
-                Map<String, Object> result = new HashMap<>();
-                addPropertiesToResult(result, prop, fieldInChildrenTarget, value);
-                map.put(root, result);
             } else {
                 addPropertiesToResult(map, prop, fieldInTarget, target);
             }
@@ -91,6 +96,10 @@ public class WrapperResponseUtils {
         if (value == null) return;
         if (primitiveType.contains(value.getClass())) {
             addPrimitiveValue(map, key, value);
+            return;
+        }
+        if (value.getClass().isEnum()) {
+            map.put(key, value);
             return;
         }
 
@@ -162,7 +171,7 @@ public class WrapperResponseUtils {
     @SneakyThrows
     private static Object getValue(String fieldName, Object target) {
         var get = ReflectionUtils.getAllMethods(target.getClass(),
-                withModifier(Modifier.PUBLIC), withPrefix("get" + String.format("%s%s", String.valueOf(fieldName.charAt(0)).toUpperCase(Locale.ROOT), fieldName.substring(1))));
+                withPattern("public .*(get|is)" + String.format("%s%s\\(\\)", String.valueOf(fieldName.charAt(0)).toUpperCase(Locale.ROOT), fieldName.substring(1))));
         if (get.isEmpty()) return null;
         return get.iterator().next().invoke(target);
     }

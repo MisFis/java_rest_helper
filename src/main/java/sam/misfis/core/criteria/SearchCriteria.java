@@ -5,6 +5,9 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -55,7 +58,14 @@ public class SearchCriteria<T extends Comparable> {
             String[] split = key.split("\\.");
             join = split[0];
             Field field = fieldInTarget.get(join);
-            Map<String, Field> fieldKeys = getFieldInTarget(field.getType());
+            Map<String, Field> fieldKeys;
+            if (field.getType().isAssignableFrom(List.class)) {
+                ParameterizedType stringListType = (ParameterizedType) field.getGenericType();
+                Class<?> genericListClass = (Class<?>) stringListType.getActualTypeArguments()[0];
+                fieldKeys = getFieldInTarget(genericListClass);
+            } else {
+                fieldKeys = getFieldInTarget(field.getType());
+            }
             this.key = split[1];
             this.type = fieldKeys.get(this.key).getType();
         } else {

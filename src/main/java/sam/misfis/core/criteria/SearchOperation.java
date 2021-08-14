@@ -1,7 +1,7 @@
 package sam.misfis.core.criteria;
 
 public enum SearchOperation {
-    EQUALITY, NEGATION, GREATER_THAN, LESS_THAN, LIKE, STARTS_WITH, ENDS_WITH, CONTAINS, IN;
+    EQUALITY, NEGATION, GREATER_THAN, LESS_THAN, STARTS_WITH, ENDS_WITH, CONTAINS, IN;
 
     public static final String[] SIMPLE_OPERATION_SET = { "=", "!", ">", "<", "~", "%", "\\*" };
 
@@ -27,8 +27,6 @@ public enum SearchOperation {
                 return GREATER_THAN;
             case '<':
                 return LESS_THAN;
-            case '~':
-                return LIKE;
             case '%':
                 return CONTAINS;
             case '*':
