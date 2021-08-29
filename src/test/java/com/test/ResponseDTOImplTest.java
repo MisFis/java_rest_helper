@@ -44,8 +44,6 @@ public class ResponseDTOImplTest {
         //response.setInclude("options.setting");
         // response.setInclude("options");
 
-        // WrapperResponseUtils.toMap(new String[]{"name", "children", "options"}, parent);
-
         WrapperResponse<TreeModel> result = response.toDTO(parent);
 
         ObjectMapper mapper = new ObjectMapper();
@@ -97,6 +95,26 @@ public class ResponseDTOImplTest {
 
         ResponseDTOImpl<TreeModel> response = new ResponseDTOImpl();
         response.setInclude("default, children.uuid");
+
+        WrapperResponse<TreeModel> result = response.toDTO(parent);
+
+        ObjectMapper mapper = new ObjectMapper();
+        log.info(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+
+        var rightResult = "{\"name\":\"parent\"}";
+
+        assertEquals(mapper.writeValueAsString(result), rightResult);
+    }
+
+    @Test
+    public void testDeepInclude() throws JsonProcessingException {
+        TreeModel parent = new TreeModel("parent");
+        TreeModel children3 = new TreeModel("children 1");
+        children3.addChildren(new TreeModel("children 1 1"));
+        parent.addChildren(parent);
+
+        ResponseDTOImpl<TreeModel> response = new ResponseDTOImpl();
+        response.setInclude("children.children.name");
 
         WrapperResponse<TreeModel> result = response.toDTO(parent);
 
@@ -187,7 +205,7 @@ public class ResponseDTOImplTest {
         public String toString() {
             return "TreeModel{" +
                     "name='" + name + '\'' +
-                    ", parent=" + parent +
+                    ", parent=" + children +
                     '}';
         }
     }

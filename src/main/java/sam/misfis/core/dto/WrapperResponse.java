@@ -38,7 +38,7 @@ public class WrapperResponse<T> implements EntityPrototype<T>{
         String includeField = this.include;
         if (includeField.equals(DEFAULT_INCLUDE)) {
             Set<String> allPrimitive = WrapperResponseUtils.getAllPrimitive(this.value);
-            properties = WrapperResponseUtils.toMap(allPrimitive.toArray(new String[0]), this.value);
+            properties = WrapperResponseUtils.toMap(this.value, allPrimitive.toArray(new String[0]) );
         } else {
             Set<String> fields = new HashSet<>();
             if (includeField.contains(DEFAULT_INCLUDE)) {
@@ -50,7 +50,7 @@ public class WrapperResponse<T> implements EntityPrototype<T>{
                 if (field != null && !field.trim().equals(""))
                     fields.add(field.trim());
             }
-            properties = WrapperResponseUtils.toMap(fields.toArray(new String[0]), this.value);
+            properties = WrapperResponseUtils.toMap(this.value, fields.toArray(new String[0]));
         }
     }
 

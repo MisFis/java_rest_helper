@@ -55,7 +55,7 @@ public class WrapperResponseUtils {
         excludeField.add("updatedWhen");
     }
 
-    public static Map<String, Object> toMap(String[] props, Object target) {
+    public static Map<String, Object> toMap(Object target, String... props) {
         Map<String, Object> map = new HashMap<>();
         Map<String, Field> fieldInTarget = getFieldInTarget(target);
 

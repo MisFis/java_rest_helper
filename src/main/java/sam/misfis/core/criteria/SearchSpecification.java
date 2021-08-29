@@ -32,7 +32,7 @@ public class SearchSpecification<T> implements Specification<T> {
     public Predicate toPredicate(final Root<T> root, final CriteriaQuery<?> query, final CriteriaBuilder builder) {
         Path<?> queryModel = root;
         Comparable value = castToParameter(criteria.getType());
-        if (criteria.getJoin() != null) queryModel = join(root, query, builder);
+        if (criteria.getJoin() != null && !criteria.getJoin().isEmpty()) queryModel = join(root, query, builder);
         switch (criteria.getOperation()) {
             case EQUALITY: {
                 if (value instanceof Boolean) {
@@ -69,19 +69,25 @@ public class SearchSpecification<T> implements Specification<T> {
 
     private Join join(final Root<T> root, final CriteriaQuery<?> query, final CriteriaBuilder builder) {
         Join joinedEntity = null;
-        if (context != null) {
-            joinedEntity = context.putIfAbsent(criteria.getKey(), root.join(criteria.getJoin()));
-        } else {
-            Iterator<Join<T, ?>> iterator = root.getJoins().iterator();
-            while (iterator.hasNext()) {
-                Join<T, ?> next = iterator.next();
-                if (next.getAttribute().getName().equals(criteria.getJoin())) {
-                    joinedEntity = next;
-                    break;
+        From entity = root;
+        for (Object o : criteria.getJoin()) {
+            String join = (String) o;
+            if (context != null) {
+                joinedEntity = context.putIfAbsent(criteria.getKey(), entity.join(join));
+                entity = joinedEntity;
+            } else {
+                Iterator<Join<T, ?>> iterator = entity.getJoins().iterator();
+                while (iterator.hasNext()) {
+                    Join<T, ?> next = iterator.next();
+                    if (next.getAttribute().getName().equals(criteria.getJoin())) {
+                        joinedEntity = next;
+                        entity = joinedEntity;
+                        break;
+                    }
                 }
-            }
-            if (joinedEntity == null) {
-                joinedEntity = root.join(criteria.getJoin());
+                joinedEntity = entity.join(join);
+                entity = joinedEntity;
+
             }
         }
 
