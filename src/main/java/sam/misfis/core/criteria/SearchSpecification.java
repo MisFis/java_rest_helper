@@ -44,10 +44,13 @@ public class SearchSpecification<T> implements Specification<T> {
                     }
                 }
 
+                if (value.equals("null")) return builder.isNull(queryModel.get(criteria.getKey()));
                 return builder.equal(queryModel.get(criteria.getKey()), value);
             }
-            case NEGATION:
+            case NEGATION: {
+                if (value.equals("null")) return builder.isNotNull(queryModel.get(criteria.getKey()));
                 return builder.notEqual(queryModel.get(criteria.getKey()), value);
+            }
             case GREATER_THAN:
                 return builder.greaterThan(queryModel.get(criteria.getKey()), value);
             case LESS_THAN:
@@ -69,6 +72,9 @@ public class SearchSpecification<T> implements Specification<T> {
 
     private Join join(final Root<T> root, final CriteriaQuery<?> query, final CriteriaBuilder builder) {
         Join joinedEntity = null;
+        if (!criteria.getJoin().isEmpty()) {
+            query.distinct(true);
+        }
         From entity = root;
         for (Object o : criteria.getJoin()) {
             String join = (String) o;
@@ -85,7 +91,7 @@ public class SearchSpecification<T> implements Specification<T> {
                         break;
                     }
                 }
-                joinedEntity = entity.join(join);
+                joinedEntity = entity.join(join, JoinType.LEFT);
                 entity = joinedEntity;
 
             }

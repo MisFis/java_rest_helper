@@ -56,7 +56,8 @@ public class WrapperResponseUtils {
     }
 
     public static Map<String, Object> toMap(Object target, String... props) {
-        Map<String, Object> map = new HashMap<>();
+        StoreValue storeValue = new StoreValue();
+        Map<String, Object> map = storeValue.getValue();
         Map<String, Field> fieldInTarget = getFieldInTarget(target);
 
         var properties = createKeyValue(props);
@@ -71,29 +72,30 @@ public class WrapperResponseUtils {
                     }
                     Map<String, Field> fieldInChildrenTarget = getFieldInTarget(value);
                     Map<String, Object> result = new HashMap<>();
-                    addPropertiesToResult(result, prop, fieldInChildrenTarget, value);
+                    addPropertiesToResult(result, prop, fieldInChildrenTarget, value, storeValue);
                     map.put(root, result);
                 }
             } else {
-                addPropertiesToResult(map, prop, fieldInTarget, target);
+                addPropertiesToResult(map, prop, fieldInTarget, target, storeValue);
             }
         }
-        return map;
+        return storeValue.getValue();
     }
 
-    private static void addPropertiesToResult(Map<String, Object> map, WrapperResponseUtils.KeyValue prop, Map<String, Field> fieldInTarget, Object target) {
+    private static void addPropertiesToResult(Map<String, Object> map, WrapperResponseUtils.KeyValue prop, Map<String, Field> fieldInTarget, Object target, StoreValue storeValue) {
         for (String key : prop.getProperties()) {
             var declaredField = fieldInTarget.get(key);
-            addProperty(map, key, declaredField, fieldInTarget, target);
+            addProperty(map, key, declaredField, fieldInTarget, target, storeValue);
         }
     }
 
-    private static void addProperty(Map<String, Object> map, String key, Field declaredField, Map<String, Field> fieldInTarget, Object target) {
+    private static void addProperty(Map<String, Object> map, String key, Field declaredField, Map<String, Field> fieldInTarget, Object target, StoreValue storeValue) {
         if (declaredField == null)
             throw new NoFieldFoundException(String.format("field %s not found in object", key), fieldInTarget.keySet());
 
         Object value = getValue(key, target);
         if (value == null) return;
+
         if (primitiveType.contains(value.getClass())) {
             addPrimitiveValue(map, key, value);
             return;
@@ -104,7 +106,7 @@ public class WrapperResponseUtils {
         }
 
         if (value instanceof Collection) {
-            map.put(key, addArrayValue(key, target));
+            map.put(key, addArrayValue(key, target, storeValue));
             return;
         }
 
@@ -113,7 +115,12 @@ public class WrapperResponseUtils {
             return;
         }
 
-        var object = addObjectValue(key, target);
+        if (storeValue.check(value)) {
+            return;
+        }
+        storeValue.addValueToContainer(value);
+
+        var object = addObjectValue(key, target, storeValue);
         if (object != null) {
             map.put(key, object);
         }
@@ -124,7 +131,7 @@ public class WrapperResponseUtils {
     }
 
     @SneakyThrows
-    private static Map<String, Object> addObjectValue(String key, Object target) {
+    private static Map<String, Object> addObjectValue(String key, Object target, StoreValue storeValue) {
         Object value = getValue(key, target);
         if (value == null) return null;
         if (target.getClass().getAnnotation(Entity.class) != null) {
@@ -136,14 +143,14 @@ public class WrapperResponseUtils {
         for (var prop : fieldInChildrenTarget.entrySet()) {
             Object propValue = getValue(prop.getKey(), value);
             if (propValue != null && !value.equals(propValue))
-                addProperty(objField, prop.getKey(), fieldInChildrenTarget.get(prop.getKey()), fieldInChildrenTarget, value);
+                addProperty(objField, prop.getKey(), fieldInChildrenTarget.get(prop.getKey()), fieldInChildrenTarget, value, storeValue);
         }
         if (objField.isEmpty()) return null;
         return objField;
     }
 
     @SneakyThrows
-    private static List<?> addArrayValue(String key, Object target) {
+    private static List<?> addArrayValue(String key, Object target, StoreValue storeValue) {
         Object value = getValue(key, target);
         if (value == null) return Collections.emptyList();
         var array = new ArrayList<>();
@@ -155,7 +162,7 @@ public class WrapperResponseUtils {
                         String keyField = prop.getKey();
                         Object o1 = getValue(keyField, o);
                         if (!target.equals(o1))
-                            addProperty(objField, keyField, fieldInChildrenTarget.get(keyField), fieldInChildrenTarget, o);
+                            addProperty(objField, keyField, fieldInChildrenTarget.get(keyField), fieldInChildrenTarget, o, storeValue);
                     }
                     array.add(objField);
                 });
@@ -290,6 +297,21 @@ public class WrapperResponseUtils {
         @Override
         public int hashCode() {
             return Objects.hash(root);
+        }
+    }
+
+    @Data
+    private static class StoreValue {
+        private Map<String, Object> value = new HashMap<>();
+
+        private Set<Object> containers = new HashSet<>();
+
+        public void addValueToContainer(Object value) {
+            this.containers.add(value);
+        }
+
+        public boolean check(Object value) {
+            return this.containers.contains(value);
         }
     }
 }
