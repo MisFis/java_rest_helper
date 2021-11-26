@@ -2,6 +2,7 @@ package sam.misfis.core.criteria;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
 
 import java.lang.reflect.Field;
@@ -14,6 +15,8 @@ import static sam.misfis.core.utils.WrapperResponseUtils.getFieldInTarget;
 @ToString
 @EqualsAndHashCode
 public class SearchCriteria<T extends Comparable> {
+    @Getter
+    private final QueryContext queryContext;
     private List<String> join = new ArrayList<>();
     private String key;
     private SearchOperation operation;
@@ -21,14 +24,8 @@ public class SearchCriteria<T extends Comparable> {
     private Class type;
     private boolean orPredicate;
 
-    public SearchCriteria(final String orPredicate, final String key, final SearchOperation operation, final T value) {
-        this.orPredicate = orPredicate != null && orPredicate.equals(SearchOperation.OR_PREDICATE_FLAG);
-        setKey(key, null);
-        this.operation = operation;
-        this.value = value;
-    }
-
-    public SearchCriteria(String key, String operation, String prefix, T value, Class clazz, String suffix) {
+    public SearchCriteria(String key, String operation, String prefix, T value, Class clazz, String suffix, QueryContext queryContext) {
+        this.queryContext = queryContext;
         SearchOperation op = SearchOperation.getSimpleOperation(operation.charAt(0));
         if (op != null) {
             if (op == SearchOperation.EQUALITY) { // the operation may be complex operation

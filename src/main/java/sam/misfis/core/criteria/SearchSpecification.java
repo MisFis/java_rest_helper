@@ -14,17 +14,17 @@ import java.util.stream.Collectors;
 @Slf4j
 @Getter
 public class SearchSpecification<T> implements Specification<T> {
-
+    private final QueryContext queryContext;
     private final SearchCriteria criteria;
     private final Map<String, Join> context;
 
     public SearchSpecification(SearchCriteria criteria) {
-        this.criteria = criteria;
-        context = null;
+        this(criteria, null);
     }
 
     public SearchSpecification(SearchCriteria criteria, Map<String, Join> context) {
         this.criteria = criteria;
+        queryContext = criteria.getQueryContext();
         this.context = context;
     }
 
@@ -76,8 +76,13 @@ public class SearchSpecification<T> implements Specification<T> {
             query.distinct(true);
         }
         From entity = root;
+        Map<String, Join> joinContext = queryContext.getJoinContext();
         for (Object o : criteria.getJoin()) {
             String join = (String) o;
+            if (joinContext.containsKey(join)) {
+                return joinContext.get(join);
+            }
+
             if (context != null) {
                 joinedEntity = context.putIfAbsent(criteria.getKey(), entity.join(join));
                 entity = joinedEntity;
@@ -92,6 +97,7 @@ public class SearchSpecification<T> implements Specification<T> {
                     }
                 }
                 joinedEntity = entity.join(join, JoinType.LEFT);
+                queryContext.putToContext(join, joinedEntity);
                 entity = joinedEntity;
 
             }
